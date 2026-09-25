@@ -18,10 +18,7 @@ const GoogleSignInSection: React.FC = () => {
         textAlign: 'center'
       }}>
         <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-          Google OAuth Not Configured
-        </div>
-        <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>
-          Set VITE_GOOGLE_CLIENT_ID in your environment to enable single sign-on.
+          Google Sign-In is not configured for this environment.
         </div>
       </div>
     );

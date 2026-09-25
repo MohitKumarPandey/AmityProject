@@ -18,6 +18,20 @@ export interface Observation {
   is_simulated: boolean;
 }
 
+export interface NormalizedCityObservation {
+  city: string;
+  latitude: number | null;
+  longitude: number | null;
+  latest_timestamp: string;
+  temperature_c: number | null;
+  temp_source: string | null;
+  temp_time: string | null;
+  humidity_percent: number | null;
+  aqi: number | null;
+  aqi_source: string | null;
+  aqi_time: string | null;
+}
+
 export interface Alert {
   id: number;
   user_id?: number;

@@ -68,6 +68,8 @@ class FeedbackResponse(BaseModel):
     feedback_type: str
     predicted_severity: Optional[str] = None
     actual_severity: Optional[str] = None
+    observed_features: Optional[Dict[str, Any]] = None
+    user_comment: Optional[str] = None
     validation_status: str
     created_at: datetime
 

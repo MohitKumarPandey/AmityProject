@@ -7,11 +7,16 @@ import { TopHeader } from '../components/layout/TopHeader';
 
 export const Dashboard: React.FC = () => {
   const [cityFilter, setCityFilter] = useState<string>('All');
+  const [selectedLocation, setSelectedLocation] = useState<{
+    name: string;
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [pulse, setPulse] = useState<CivicPulse | null>(null);
   const [loadingPulse, setLoadingPulse] = useState(true);
   const [pulseError, setPulseError] = useState('');
 
-  const { observations, loading: obsLoading, error: obsError, refresh: refreshObs, lastUpdated } = useObservations(cityFilter);
+  const { observations, normalized, loading: obsLoading, error: obsError, refresh: refreshObs, lastUpdated } = useObservations(cityFilter);
 
   const loadPulse = useCallback(async () => {
     setLoadingPulse(true);
@@ -44,6 +49,13 @@ export const Dashboard: React.FC = () => {
 
   const loading = loadingPulse || obsLoading;
   const error = pulseError || obsError;
+  
+  const currentCityData = cityFilter === 'All' 
+    ? (Object.values(normalized).sort((a,b) => new Date(b.latest_timestamp).getTime() - new Date(a.latest_timestamp).getTime())[0] || null)
+    : normalized[cityFilter];
+
+  const latestValidTemp = currentCityData?.temperature_c;
+  const latestValidAqi = currentCityData?.aqi;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -51,7 +63,9 @@ export const Dashboard: React.FC = () => {
         title="Civic Intelligence Dashboard"
         selectedCity={cityFilter}
         onCityChange={setCityFilter}
+        onSelectLocation={setSelectedLocation}
         onRefresh={handleRefresh}
+        refreshing={loading}
         apiConnected={!error}
       />
 
@@ -126,16 +140,16 @@ export const Dashboard: React.FC = () => {
             {/* KPI GRID */}
             <div className="grid-cols-4">
               <div className="card">
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontWeight: 500 }}>Air Quality Index</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontWeight: 500 }}>Current Air Quality (AQI)</div>
                 <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  {pulse?.dimensions.air_quality.avg_aqi !== undefined ? pulse.dimensions.air_quality.avg_aqi : '--'}
+                  {latestValidAqi !== undefined ? latestValidAqi : 'N/A'}
                 </div>
               </div>
 
               <div className="card">
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontWeight: 500 }}>Average Temperature</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontWeight: 500 }}>Current Temperature</div>
                 <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  {pulse?.dimensions.weather.avg_temperature_c !== undefined ? `${pulse.dimensions.weather.avg_temperature_c} °C` : '--'}
+                  {latestValidTemp !== undefined ? `${latestValidTemp} °C` : 'N/A'}
                 </div>
               </div>
 
@@ -160,7 +174,12 @@ export const Dashboard: React.FC = () => {
                 LIVE GEOSPATIAL MAP — TELEMETRY & ALERTS
               </div>
               <div style={{ flex: 1, borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                <MapPanel observations={observations} />
+                <MapPanel
+                  normalizedData={normalized}
+                  selectedCity={cityFilter}
+                  selectedLocation={selectedLocation}
+                  observations={observations}
+                />
               </div>
             </div>
           </div>

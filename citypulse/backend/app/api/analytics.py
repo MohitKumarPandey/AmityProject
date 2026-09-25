@@ -19,7 +19,7 @@ router = APIRouter()
 async def get_summary(city: str = None, db: AsyncSession = Depends(get_db)):
     """Grounded summary from actual stored data."""
     cutoff = datetime.utcnow() - timedelta(hours=24)
-    query = select(ObservationORM).where(ObservationORM.timestamp >= cutoff)
+    query = select(ObservationORM).where(ObservationORM.timestamp >= cutoff).where(ObservationORM.is_simulated == False)
     if city:
         query = query.where(ObservationORM.city == city)
     result = await db.execute(query)
@@ -89,7 +89,7 @@ async def get_civic_pulse(city: str = None, db: AsyncSession = Depends(get_db)):
     cutoff = datetime.utcnow() - timedelta(hours=24)
 
     # Observation counts
-    obs_query = select(func.count(ObservationORM.id)).where(ObservationORM.timestamp >= cutoff)
+    obs_query = select(func.count(ObservationORM.id)).where(ObservationORM.timestamp >= cutoff).where(ObservationORM.is_simulated == False)
     if city:
         obs_query = obs_query.where(ObservationORM.city == city)
     obs_count = (await db.execute(obs_query)).scalar() or 0
@@ -111,13 +111,15 @@ async def get_civic_pulse(city: str = None, db: AsyncSession = Depends(get_db)):
     unread_alerts = (await db.execute(alert_query)).scalar() or 0
 
     # Average metrics
-    obs_result = await db.execute(
-        select(
-            func.avg(ObservationORM.temperature_c),
-            func.avg(ObservationORM.aqi),
-            func.avg(ObservationORM.humidity_percent),
-        ).where(ObservationORM.timestamp >= cutoff)
-    )
+    obs_avg_query = select(
+        func.avg(ObservationORM.temperature_c),
+        func.avg(ObservationORM.aqi),
+        func.avg(ObservationORM.humidity_percent),
+    ).where(ObservationORM.timestamp >= cutoff).where(ObservationORM.is_simulated == False)
+    if city:
+        obs_avg_query = obs_avg_query.where(ObservationORM.city == city)
+    
+    obs_result = await db.execute(obs_avg_query)
     row = obs_result.one_or_none()
     avg_temp = round(row[0], 1) if row and row[0] else None
     avg_aqi = int(row[1]) if row and row[1] else None
@@ -205,6 +207,7 @@ async def get_trends(
     query = (
         select(ObservationORM)
         .where(ObservationORM.timestamp >= cutoff)
+        .where(ObservationORM.is_simulated == False)
         .order_by(ObservationORM.timestamp.asc())
     )
     if city:

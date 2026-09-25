@@ -39,6 +39,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         raise credentials_exception
     return user
 
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+
+async def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme_optional), db: AsyncSession = Depends(get_db)) -> Optional[UserORM]:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id:
+            return await db.get(UserORM, int(user_id))
+    except Exception:
+        pass
+    return None
+
 @router.post("/signup", response_model=UserResponse)
 async def signup(user_data: UserSignup, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(UserORM).where(UserORM.email == user_data.email))

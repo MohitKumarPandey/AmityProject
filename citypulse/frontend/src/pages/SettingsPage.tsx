@@ -62,17 +62,13 @@ export const SettingsPage: React.FC = () => {
                 <div className="grid-cols-2">
                   <div className="form-group">
                     <label className="form-label">Home City</label>
-                    <select
+                    <input
+                      type="text"
+                      placeholder="e.g. Jaipur"
                       value={prefs.home_city}
                       onChange={e => setPrefs({ ...prefs, home_city: e.target.value })}
                       className="form-input"
-                    >
-                      <option value="Jaipur">Jaipur</option>
-                      <option value="Delhi">Delhi</option>
-                      <option value="Mumbai">Mumbai</option>
-                      <option value="London">London</option>
-                      <option value="New York">New York</option>
-                    </select>
+                    />
                   </div>
 
                   <div className="form-group">

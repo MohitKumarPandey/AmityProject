@@ -40,6 +40,7 @@ const DEFAULT_CITY = 'All';
 
 export const AnalyticsPage: React.FC = () => {
   const [city, setCity] = useState(DEFAULT_CITY);
+  const [timeRangeHours, setTimeRangeHours] = useState<number>(48);
 
   const [trends, setTrends] = useState<TrendPoint[]>([]);
   const [pulse, setPulse] = useState<CivicPulse | null>(null);
@@ -64,7 +65,7 @@ export const AnalyticsPage: React.FC = () => {
         correlationResponse,
         anomalyResponse,
       ] = await Promise.all([
-        fetchTrends(targetCity, 48),
+        fetchTrends(targetCity, timeRangeHours),
         fetchCivicPulse(targetCity),
         fetchSummary(targetCity),
 
@@ -80,7 +81,9 @@ export const AnalyticsPage: React.FC = () => {
       const chartData: TrendPoint[] = (trendResponse ?? []).map(
         (observation: any) => ({
           time: observation.timestamp
-            ? new Date(observation.timestamp).toLocaleTimeString([], {
+            ? new Date(observation.timestamp).toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
               })
@@ -123,7 +126,7 @@ export const AnalyticsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [city]);
+  }, [city, timeRangeHours]);
 
   useEffect(() => {
     load();
@@ -158,6 +161,52 @@ export const AnalyticsPage: React.FC = () => {
           overflowY: 'auto',
         }}
       >
+        {/* TIME RANGE CONTROLS */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1.25rem',
+            background: 'var(--bg-card)',
+            padding: '0.75rem 1.25rem',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-color)',
+          }}
+        >
+          <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+            Analytics Scope: {city === DEFAULT_CITY ? 'All Locations' : city}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Time Range:</span>
+            <button
+              type="button"
+              className={timeRangeHours === 24 ? 'btn-primary' : 'btn-secondary'}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+              onClick={() => setTimeRangeHours(24)}
+            >
+              24 Hours
+            </button>
+            <button
+              type="button"
+              className={timeRangeHours === 168 ? 'btn-primary' : 'btn-secondary'}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+              onClick={() => setTimeRangeHours(168)}
+            >
+              7 Days
+            </button>
+            <button
+              type="button"
+              className={timeRangeHours === 720 ? 'btn-primary' : 'btn-secondary'}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+              onClick={() => setTimeRangeHours(720)}
+            >
+              30 Days
+            </button>
+          </div>
+        </div>
+
         {loading ? (
           <LoadingState />
         ) : error ? (
@@ -211,19 +260,15 @@ export const AnalyticsPage: React.FC = () => {
             {pulse && (
               <div className="grid-cols-2">
                 <MetricCard
-                  title="Civic Pulse"
+                  title="Civic Pulse Signal"
                   value={getPulseValue(pulse)}
-                  description="Current civic/environmental signal"
+                  description="Current civic/environmental telemetry health"
                 />
 
                 <MetricCard
-                  title="Selected Area"
-                  value={
-                    city === DEFAULT_CITY
-                      ? 'All Cities'
-                      : city
-                  }
-                  description="Analytics scope"
+                  title="Monitored Observations"
+                  value={String(pulse.observation_count ?? 0)}
+                  description={`Telemetry records in last ${timeRangeHours} hours`}
                 />
               </div>
             )}
@@ -236,7 +281,7 @@ export const AnalyticsPage: React.FC = () => {
               <div
                 className="card"
                 style={{
-                  height: '360px',
+                  height: '380px',
                   display: 'flex',
                   flexDirection: 'column',
                 }}
@@ -249,11 +294,11 @@ export const AnalyticsPage: React.FC = () => {
                     marginBottom: '1rem',
                   }}
                 >
-                  Environmental Trends
+                  Environmental Telemetry Trends (Temperature & AQI)
                 </div>
 
                 {trends.length === 0 ? (
-                  <EmptyState text="No recent trend data available." />
+                  <EmptyState text="No environmental measurements are available for this location and time range." />
                 ) : (
                   <div
                     style={{
@@ -275,12 +320,12 @@ export const AnalyticsPage: React.FC = () => {
                         <XAxis
                           dataKey="time"
                           stroke="#64748B"
-                          fontSize={12}
+                          fontSize={11}
                         />
 
                         <YAxis
                           stroke="#64748B"
-                          fontSize={12}
+                          fontSize={11}
                         />
 
                         <Tooltip />
@@ -300,7 +345,7 @@ export const AnalyticsPage: React.FC = () => {
                         <Line
                           type="monotone"
                           dataKey="aqi"
-                          name="AQI"
+                          name="Air Quality Index (AQI)"
                           stroke="#DC2626"
                           strokeWidth={2}
                           dot={false}
@@ -317,7 +362,7 @@ export const AnalyticsPage: React.FC = () => {
               <div
                 className="card"
                 style={{
-                  height: '360px',
+                  height: '380px',
                   display: 'flex',
                   flexDirection: 'column',
                 }}
@@ -334,7 +379,7 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
 
                 {trends.length === 0 ? (
-                  <EmptyState text="No humidity observations available." />
+                  <EmptyState text="No humidity observations available for the selected location." />
                 ) : (
                   <div
                     style={{
@@ -356,12 +401,12 @@ export const AnalyticsPage: React.FC = () => {
                         <XAxis
                           dataKey="time"
                           stroke="#64748B"
-                          fontSize={12}
+                          fontSize={11}
                         />
 
                         <YAxis
                           stroke="#64748B"
-                          fontSize={12}
+                          fontSize={11}
                         />
 
                         <Tooltip />
@@ -683,10 +728,6 @@ const MetricCard: React.FC<{
   </div>
 );
 
-/* =========================================================
-   CIVIC PULSE VALUE
-========================================================= */
-
 const getPulseValue = (
   pulse: CivicPulse
 ): string => {
@@ -710,7 +751,7 @@ const getPulseValue = (
     return numericValue.toFixed(1);
   }
 
-  return 'Available';
+  return 'Normal';
 };
 
 export default AnalyticsPage;

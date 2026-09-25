@@ -7,7 +7,7 @@ from typing import Dict, List, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_cities_list, CITY_POSITIONS
-from ..providers.weather import OpenMeteoWeatherProvider
+from ..providers.openweather import OpenWeatherProvider
 from ..providers.openaq import OpenAQProvider
 from ..providers.transit import SimulatedTransitProvider
 from ..repository.observation import persist_observation
@@ -28,9 +28,9 @@ async def ingest_city(city: str, latitude: float, longitude: float, db: AsyncSes
 
     # Weather (real data from Open-Meteo)
     try:
-        weather_provider = OpenMeteoWeatherProvider(city, latitude, longitude)
-        raw_weather = await weather_provider.fetch()
-        obs_weather = weather_provider.to_observation(raw_weather)
+        weather_provider = OpenWeatherProvider()
+        raw_weather = await weather_provider.fetch_current(latitude, longitude)
+        obs_weather = weather_provider.to_observation(raw_weather, city, latitude, longitude)
         await persist_observation(db, obs_weather)
         result["weather_success"] = True
     except Exception as exc:
